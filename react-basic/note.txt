@@ -1,0 +1,4 @@
+https://unpkg.com/babel-standalone@6.15.0/babel.js
+
+https://github.com/facebook/react/releases
+
