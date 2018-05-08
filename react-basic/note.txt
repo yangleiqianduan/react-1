@@ -2,3 +2,67 @@ https://unpkg.com/babel-standalone@6.15.0/babel.js
 
 https://github.com/facebook/react/releases
 
+4. State & 生命周期
+从之前的时钟例子说起：
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="../js/react.development.js"></script>
+    <script src="../js/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    function tick() {
+        const element = (
+            <div>
+                <h1>Hello, world!</h1>
+                <h2>It is {new Date().toLocaleTimeString()}.</h2>
+            </div>
+        );
+        ReactDOM.render(
+            element,
+            document.getElementById('root')
+        );
+    }
+
+    setInterval(tick, 1000);
+</script>
+</body>
+</html>
+
+现在的代码来说是将时钟显示的部分和每秒重新渲染一次的部分耦合在了一起。因为如果有其他的地方需要使用时钟显示的部分，但是不需要每秒执行一次。那么现在这里时钟显示的部分不能够重用。
+第一步就是封装时钟：
+function Clock(props) {
+    return (
+        <div>
+            <h1>Hello, world!</h1>
+            <h2>It is {props.date.toLocaleTimeString()}.</h2>
+        </div>
+    );
+}
+
+function tick() {
+    ReactDOM.render(
+        <Clock date={new Date()} />,
+        document.getElementById('root')
+    );
+}
+
+setInterval(tick, 1000);
+
+目前来说时钟部分已经封装成了Clock组件。但是上面我们的说法有点牵强，因为我们将每秒执行一次划分到当前主逻辑去了，按照正常的思想认为：Clock就是一个可以自动更新时间的组件。
+
+理想情况，下面的代码直接完成所有的操作：
+ReactDOM.render(
+  <Clock />,
+  document.getElementById('root')
+);
+
+现在我们需要思考的是：对于一个组建如何完成当前的工作。
+(1) 设置一个定时器，取每一秒执行一次，然后将页面的时钟显示更新一次。这部分内容应该放在组建初始化的时候。
+(2) 当组建卸载的时候需要将当前定时器清除掉，因为这个定时器会造成内存泄露，因为当前加载的不是这个组建，所以内部的资源都要清除掉。这部分内容要放在组建卸载的时候。
+(3) 组建生存周期内，需要代码告知当前组建内容需要重新渲染。
+
+在继续进行
