@@ -2,67 +2,170 @@ https://unpkg.com/babel-standalone@6.15.0/babel.js
 
 https://github.com/facebook/react/releases
 
-4. State & 生命周期
-从之前的时钟例子说起：
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="../js/react.development.js"></script>
-    <script src="../js/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.js"></script>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-    function tick() {
-        const element = (
-            <div>
-                <h1>Hello, world!</h1>
-                <h2>It is {new Date().toLocaleTimeString()}.</h2>
-            </div>
-        );
-        ReactDOM.render(
-            element,
-            document.getElementById('root')
-        );
+事件处理
+
+语法：
+React事件绑定属性的命名采用驼峰式写法，而不是小写。
+如果采用 JSX 的语法你需要传入一个函数作为事件处理函数，而不是一个字符串(DOM元素的写法)
+
+JSX语法语法绑定事件
+class Clock extends React.Component {
+    constructor(props) {
+        super(props);
     }
 
-    setInterval(tick, 1000);
-</script>
-</body>
-</html>
+    domClick(event) {
+    	console.log(this);
+        console.log(event);
+        event.preventDefault(); //组织默认行为
+    }
 
-现在的代码来说是将时钟显示的部分和每秒重新渲染一次的部分耦合在了一起。因为如果有其他的地方需要使用时钟显示的部分，但是不需要每秒执行一次。那么现在这里时钟显示的部分不能够重用。
-第一步就是封装时钟：
-function Clock(props) {
+    render() {
+        return (
+            <div onClick={this.domClick}>
+                Test react event!
+            </div>
+        );
+    }
+}
+
+ReactDOM.render(
+    <Clock />,
+    document.getElementById('root')
+);
+
+在 React 中另一个不同是你不能使用返回 false 的方式阻止默认行为。你必须明确的使用 preventDefault。
+
+react 事件绑定函数带括号和不带括号的区别
+上面我们理解到当前react的事件绑定是需要JSX语法。现在我将上面的代码修改一下，然后去进行我们的测试：
+
+domClick(event) {
+    console.log(this);
+    console.log(event);
+    event.preventDefault(); //阻止默认行为
+
+    return "this is the result of fuction domClick";
+}
+
+render() {
     return (
-        <div>
-            <h1>Hello, world!</h1>
-            <h2>It is {props.date.toLocaleTimeString()}.</h2>
+        <div onClick={this.domClick}>
+            Test react event!
         </div>
     );
 }
 
-function tick() {
-    ReactDOM.render(
-        <Clock date={new Date()} />,
-        document.getElementById('root')
+然后我们去看一下当前当去创建elemnt的时候传进去的prop是什么？
+
+这个时候我们可以看到当前穿进去的是一个函数，然后我们在将代码改成
+domClick(event) {
+    console.log(this);
+    console.log(event);
+    //event.preventDefault(); //阻止默认行为
+}
+
+render() {
+    return (
+        <div onClick={this.domClick()}>
+            Test react event!
+        </div>
     );
 }
 
-setInterval(tick, 1000);
+然后看一下当前的结果
 
-目前来说时钟部分已经封装成了Clock组件。但是上面我们的说法有点牵强，因为我们将每秒执行一次划分到当前主逻辑去了，按照正常的思想认为：Clock就是一个可以自动更新时间的组件。
+从上面的结果可以看出当我们不加上括号的时候是正常的情况，因为此时dom绑定的是一个函数，但是加上括号，函数会先执行，然后将执行的结果进行dom绑定。正常会报错的，错误如下：
 
-理想情况，下面的代码直接完成所有的操作：
-ReactDOM.render(
-  <Clock />,
-  document.getElementById('root')
-);
+react-dom.development.js:526 Warning: Expected `onClick` listener to be a function, instead got a value of `string` type.
+    in div (created by Clock)
+    in Clock
 
-现在我们需要思考的是：对于一个组建如何完成当前的工作。
-(1) 设置一个定时器，取每一秒执行一次，然后将页面的时钟显示更新一次。这部分内容应该放在组建初始化的时候。
-(2) 当组建卸载的时候需要将当前定时器清除掉，因为这个定时器会造成内存泄露，因为当前加载的不是这个组建，所以内部的资源都要清除掉。这部分内容要放在组建卸载的时候。
-(3) 组建生存周期内，需要代码告知当前组建内容需要重新渲染。
+但是呢，由于普通情况下用于绑定事件的函数都不会有返回值，所以不会报错，只是设置的事件绑定不会执行。这也是上面修改的code将注视了一行代码，因为没有event对象，因为当前就是函数执行表达式。
 
-在继续进行
+
+react this
+从之前的内容我们了解到react的内部其实是有自己的生命周期函数，以及自己维护的状态，以及与其他组件交互的props。那么我们的this其实很重要，因为可能在我们的方法里是需要去更新当前组件的state，或者去执行父组件传进来的this.props内部的方法。所以我们需要确定我们的方法内部可以取得到当前组件this。
+
+我们还是从上面的最普通的开始说起：
+<div onClick={this.domClick}>
+    Test react event!
+</div>
+
+当前情况下函数执行的时候this为undefined。为什么呢？因为当真正执行domClick的时候是浏览器引擎的callback函数，代码的执行由浏览器事件循环机制执行的。我之前有文章说过相关的内容。
+
+bind()
+详情访问：https://blog.csdn.net/it_rod/article/details/71036766#t8
+Function.prototype.bind(thisArg, arg1, arg2, …) 是ES5新增的函数扩展方法，bind()返回一个新的函数对象，该函数的this被绑定到thisArg上，并向事件处理器中传入参数。
+
+所以上面的代码改写如下：
+render() {
+    return (
+        <div onClick={this.domClick.bind(this)}>
+            Test react event!
+        </div>
+    );
+}
+
+构造函数内绑定
+在构造函数 constructor 内绑定this，好处是仅需要绑定一次，避免每次渲染时都要重新绑定，函数在别处复用时也无需再次绑定。
+这里的原因是因为在constructor函数中的内容都会执行一次。但是为什么可以这样做呢？
+
+react内部在穿件组件的时候会执行一个方法constructClassInstance，内部是通过var instance = new ctor(props, context)创建组件。而且编译的时候构造函数的执行就是相当于new一个普通的function。至于new 一个普通的function的this是指向当前生成的对象的。详情可以访问：https://blog.csdn.net/it_rod/article/details/71036766#t8
+
+class Clock extends React.Component {
+    constructor(props) {
+        super(props);
+        this.domClick = this.domClick.bind(this)
+    }
+
+    domClick(event) {
+        console.log(this);
+        console.log(event);
+        event.preventDefault(); //阻止默认行为
+
+        //return "this is the result of fuction domClick";
+    }
+
+    render() {
+        return (
+            <div onClick={this.domClick}>
+                Test react event!
+            </div>
+        );
+    }
+}
+
+箭头函数
+箭头函数则会捕获其所在上下文的this值，作为自己的this值，使用箭头函数就不用担心函数内的this不是指向组件内部了。详情访问：https://blog.csdn.net/it_rod/article/details/71036766#t10
+
+这样的话使用就很方便了，只要是你在调用当前的这个函数的地方都可以使用箭头函数去表示。因为不管下面的几种方式使用哪一种，最后作用域的查找都会查找到组件层的this。除非自己方法内部去重新赋值this。
+//第一种
+render() {
+    return (
+        <div onClick={()=>{this.domClick}}>
+            Test react event!
+        </div>
+    );
+}
+
+
+//第二种
+domClick = (event) => {
+    console.log(this);
+    console.log(event);
+    event.preventDefault(); //阻止默认行为
+
+    //return "this is the result of fuction domClick";
+}
+
+render() {
+    return (
+        <div onClick={this.domClick}>
+            Test react event!
+        </div>
+    );
+}
+
+当然你也可以在构造函数中去使用箭头函数，这里就不将例子写出来了。
+
+向事件处理程序传递参数
