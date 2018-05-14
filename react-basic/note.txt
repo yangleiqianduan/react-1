@@ -168,4 +168,448 @@ render() {
 
 当然你也可以在构造函数中去使用箭头函数，这里就不将例子写出来了。
 
+
 向事件处理程序传递参数
+还是先将之前上面的例子拿下来看一下，下面是一种正常可以进行事件调用的代码书写。所以请回顾一下上面我们所说的domClick加括号和不加括号的区别。所以这里当我们加上括号和参数的话必须返回值还是一个函数才行。所以直接加括号不行的。
+render() {
+    return (
+        <div onClick={this.domClick}>
+            Test react event!
+        </div>
+    );
+}
+
+bind方式和箭头函数方式，这两种为什么可以呢？因为这二者执行完之后返回的都是一个函数，而不是一个函数执行之后返回值（不是函数返回值）。下面直接将代码贴出来看一下好了。
+
+//箭头函数
+domClick = (x, y, event) => {
+    console.log(this);
+    console.log(event);
+}
+
+render() {
+    return (
+        <div onClick={(e) => this.domClick(1, 2, e)}>
+            Test react event!
+        </div>
+    );
+}
+
+//bind
+domClick = (x, y, event) => {
+    console.log(this);
+    console.log(event);
+}
+
+render() {
+    return (
+        <div onClick={this.domClick.bind(this, 1, 2)}>
+            Test react event!
+        </div>
+    );
+}
+
+* bind方式传递参数，event对象会默认放置（隐式传递）到参数的最后一个位置上。
+
+
+条件渲染
+在 React 中，你可以创建不同的组件来封装各种你需要的行为。然后还可以根据应用的状态变化只渲染其中的一部分。
+
+由于虚拟DOM的创建，所以我们可以根据变量来控制return 不同的返回值。
+render() {
+    const isLoggedIn = this.state.isLoggedIn;
+
+    let button = null;
+    if (isLoggedIn) {
+      button = <LogoutButton onClick={this.handleLogoutClick} />;
+    } else {
+      button = <LoginButton onClick={this.handleLoginClick} />;
+    }
+
+    return (
+      <div>
+        <Greeting isLoggedIn={isLoggedIn} />
+        {button}
+      </div>
+    );
+}
+
+然后是由于我们可以使用JSX表达式，所以也可以使用与元素符 && 和 三目元算符。这两种比较简单，就不贴例子了。
+
+阻止组件渲染
+在极少数情况下，你可能希望隐藏组件，即使它被其他组件渲染。让 render 方法返回 null 而不是它的渲染结果即可实现。
+
+
+
+列表和Keys
+首先使用map遍历数组元素然后渲染。
+class Clock extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        const numbers = [1, 2, 3, 4, 5];
+        return numbers.map((number) =>
+            <li>{number}</li>
+        );
+    }
+}
+
+ReactDOM.render(
+    <Clock />,
+    document.getElementById('root')
+);
+
+上面的代码会包下面的错误：
+
+尽管目前我们还不知道这个错误是什么问题，但是通过提示我们可以看出5个li元素具有相同的key，至于这个key值是什么，目前不考虑，因为当前我只需要将key的值给与不同的值。
+class Clock extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        const numbers = [1, 2, 3, 4, 5];
+        return numbers.map((number, index) =>
+            <li key={index}>{number}</li>
+        );
+    }
+}
+
+ReactDOM.render(
+    <Clock />,
+    document.getElementById('root')
+);
+
+至于这样写的原因呢？因为第一个参数是遍历元素，第二个参数是索引。
+
+Keys
+Keys可以在DOM中的某些元素被增加或删除的时候帮助React识别哪些元素发生了变化。因此我们应当给数组中的每一个元素赋予一个确定的标识。
+
+首选id作为key
+一个元素的key最好是这个元素在列表中拥有的一个独一无二的字符串。通常，我们使用来自数据的id作为元素的key。
+const todoItems = todos.map((todo) =>
+  <li key={todo.id}>
+    {todo.text}
+  </li>
+);
+
+没有话可以选用其它内容，例如索引index。如果列表可以重新排序，我们不建议使用索引来进行排序，因为这会导致渲染变得很慢。
+
+用keys提取组件
+function ListItem(props) {
+    return <li>{props.value}</li>;
+}
+
+function NumberList(props) {
+    const numbers = props.numbers;
+    const listItems = numbers.map((number) =>
+        <ListItem key={number.toString()}
+                  value={number} />
+
+    );
+    return (
+        <ul>
+            {listItems}
+        </ul>
+    );
+}
+
+const numbers = [1, 2, 3, 4, 5];
+ReactDOM.render(
+    <NumberList numbers={numbers} />,
+    document.getElementById('root')
+);
+
+
+
+表单
+HTML表单元素与React中的其他DOM元素有所不同,因为表单元素生来就保留一些内部状态。
+当用户提交表单时，HTML的默认行为会使这个表单跳转到一个新页面。在React中亦是如此。但大多数情况下，我们都会构造一个处理提交表单并可访问用户输入表单数据的函数。实现这一点的标准方法是使用一种称为“受控组件”的技术。
+
+在HTML当中，像<input>,<textarea>, 和 <select>这类表单元素会维持自身状态，并根据用户输入进行更新。但在React中，可变的状态通常保存在组件的状态属性中，并且只能用 setState() 方法进行更新。
+
+我们通过使react变成一种单一数据源的状态来结合二者。React负责渲染表单的组件仍然控制用户后续输入时所发生的变化。相应的，其值由React控制的输入表单元素称为“受控组件”。
+
+class NameForm extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {value: ''};
+
+        this.handleChange = this.handleChange.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
+    }
+
+    handleChange(event) {
+        this.setState({value: event.target.value});
+    }
+
+    handleSubmit(event) {
+        alert('A name was submitted: ' + this.state.value);
+        event.preventDefault();
+    }
+
+    render() {
+        return (
+            <form onSubmit={this.handleSubmit}>
+                <label>
+                    Name:
+                    <input type="text" value={this.state.value} onChange={this.handleChange} />
+                </label>
+                <input type="submit" value="Submit" />
+            </form>
+        );
+    }
+}
+
+ReactDOM.render(
+    <NameForm/>,
+    document.getElementById('root')
+);
+
+
+状态提升
+使用 react 经常会遇到几个组件需要共用状态数据的情况。这种情况下，我们最好将这部分共享的状态提升至他们最近的父组件当中进行管理。
+
+创建一个温度计算器来计算水是否会在给定的温度下烧开，用户输入当前温度数。
+<script type="text/babel">
+    function BoilingVerdict(props) {
+        if (props.celsius >= 100) {
+            return <p>水会烧开</p>;
+        }
+        return <p>水不会烧开</p>;
+    }
+
+    class Calculator extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleChange = this.handleChange.bind(this);
+            this.state = {temperature: ''};
+        }
+
+        handleChange(e) {
+            this.setState({temperature: e.target.value});
+        }
+
+        render() {
+            const temperature = this.state.temperature;
+            return (
+                <fieldset>
+                    <legend>输入一个摄氏温度</legend>
+                    <input
+                        value={temperature}
+                        onChange={this.handleChange} />
+
+                    <BoilingVerdict
+                        celsius={parseFloat(temperature)} />
+
+                </fieldset>
+            );
+        }
+    }
+
+    ReactDOM.render(
+        <Calculator/>,
+        document.getElementById('root')
+    );
+</script>
+
+华氏温度新需求：
+现在我们有了一个新的需求，在提供摄氏度输入的基础之上，再提供一个华氏温度输入，并且它们能保持同步。
+
+分析一下： 
+需求是将摄氏温度和华氏温度保持同步，问题在于如何取保持。以当前的代码来看，当用户修改输入，需要将当前温度发送给另一个存储华氏温度的组建，而且还能够接受到华氏温度的最新变化值。这个东西看起来很复杂，是因为两个组件的存在如何进行通信，好像目前了解到的只是没有能够解决的。
+
+那么就只有想一下目前已经存在的知识。好像只有props。但是props的使用适用于父子组件间的。所以我们需要将显示温度相关内容（TemperatureInput）提出来，就是摄氏温度与华氏温度都存在与Calculator。然后TemperatureInput的显示就由Calculator决定。
+
+说到TemperatureInput的显示就由Calculator决定，那么现在Calculator内渲染结构如下：
+<TemperatureInput
+    scale="c"
+    temperature={celsius}
+    onTemperatureChange={this.handleCelsiusChange} />
+
+<TemperatureInput
+    scale="f"
+    temperature={fahrenheit}
+    onTemperatureChange={this.handleFahrenheitChange} />
+
+首先呢，scale参数判断是摄氏温度还是华氏温度。temperature为具体温度值，第三个为一个方法。为什么会有这个方法呢？因为首先在Calculator内部而言，什么时候重新渲染组件（也就是调用render函数）是由Calculator自己决定的。但是呢现在用户的输入实在子组件TemperatureInput中。这就导致子组件你在重新输入，不会让父组件重新渲染，父组件不重新渲染，那么两个组件中的值就不会保持一致。所以当子组件的温度值发生变化的时候，我么还需要通知父组件更新温度值，并且重新渲染。那么这就是第三个参数存在的意义。当子组件更新的时候，需要调用父组件的方法，以达到更新父组件的state，然后达到重新render，重新向子组件传入新的props，保持数据的一致。
+
+改写如下：
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="../js/react.development.js"></script>
+    <script src="../js/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+    function BoilingVerdict(props) {
+        if (props.celsius >= 100) {
+            return <p>水会烧开</p>;
+        }
+        return <p>水不会烧开</p>;
+    }
+
+    function toCelsius(fahrenheit) {
+        return (fahrenheit - 32) * 5 / 9;
+    }
+
+    function toFahrenheit(celsius) {
+        return (celsius * 9 / 5) + 32;
+    }
+
+    function tryConvert(temperature, convert) {
+        const input = parseFloat(temperature);
+        if (Number.isNaN(input)) {
+            return '';
+        }
+        const output = convert(input);
+        const rounded = Math.round(output * 1000) / 1000;
+        return rounded.toString();
+    }
+
+    const scaleNames = {
+        c: 'Celsius',
+        f: 'Fahrenheit'
+    };
+
+    class TemperatureInput extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleChange = this.handleChange.bind(this);
+            this.state = {temperature: ''};
+        }
+
+        handleChange(e) {
+            //this.setState({temperature: e.target.value});
+            this.props.onTemperatureChange(e.target.value);
+        }
+
+        render() {
+            const temperature = this.props.temperature;
+            const scale = this.props.scale;
+            return (
+                <fieldset>
+                    <legend>Enter temperature in {scaleNames[scale]}:</legend>
+                    <input value={temperature}
+                           onChange={this.handleChange} />
+                </fieldset>
+            );
+        }
+    }
+
+    class Calculator extends React.Component {
+        constructor(props) {
+            super(props);
+            this.handleCelsiusChange = this.handleCelsiusChange.bind(this);
+            this.handleFahrenheitChange = this.handleFahrenheitChange.bind(this);
+            this.state = {temperature: '', scale: 'c'};
+        }
+
+        handleCelsiusChange(temperature) {
+            this.setState({scale: 'c', temperature});
+        }
+
+        handleFahrenheitChange(temperature) {
+            this.setState({scale: 'f', temperature});
+        }
+
+        render() {
+            const scale = this.state.scale;
+            const temperature = this.state.temperature;
+            const celsius = scale === 'f' ? tryConvert(temperature, toCelsius) : temperature;
+            const fahrenheit = scale === 'c' ? tryConvert(temperature, toFahrenheit) : temperature;
+
+            return (
+                <div>
+                    <TemperatureInput
+                        scale="c"
+                        temperature={celsius}
+                        onTemperatureChange={this.handleCelsiusChange} />
+
+                    <TemperatureInput
+                        scale="f"
+                        temperature={fahrenheit}
+                        onTemperatureChange={this.handleFahrenheitChange} />
+
+                    <BoilingVerdict
+                        celsius={parseFloat(celsius)} />
+                </div>
+            );
+        }
+    }
+
+    ReactDOM.render(
+        <Calculator/>,
+        document.getElementById('root')
+    );
+</script>
+</body>
+</html>
+
+
+组合
+因为前面的例子呢我们使用都是没有子元素的组件，就像上面例子中的<Calculator/>。但是很多情况是会含有子元素的。
+function FancyBorder(props) {
+    return (
+        <div className={'FancyBorder FancyBorder-' + props.color}>
+            {props.children}
+        </div>
+    );
+}
+
+function WelcomeDialog() {
+    return (
+        <FancyBorder color="blue">
+            <h1 className="Dialog-title">
+                Welcome
+            </h1>
+            <p className="Dialog-message">
+                Thank you for visiting our spacecraft!
+            </p>
+        </FancyBorder>
+    );
+}
+
+ReactDOM.render(
+    <WelcomeDialog/>,
+    document.getElementById('root')
+);
+
+我们看一下FancyBorder内部的props.children是什么？
+可以看到传入的就是<FancyBorder></<FancyBorder>内部的子元素。
+
+之前我们了解过属性，这里我们也可以将子元素以属性的方式传递：
+function FancyBorder(props) {
+    return (
+        <div className={'FancyBorder FancyBorder-' + props.color}>
+            {props.left}
+            {props.right}
+        </div>
+    );
+}
+
+function WelcomeDialog() {
+    return (
+        <FancyBorder color="blue"
+                     left={
+                         <h1 className="Dialog-title">
+                             Welcome
+                         </h1>
+                     }
+                     right={
+                         <p className="Dialog-message">
+                             Thank you for visiting our spacecraft!
+                         </p>
+                     }/>
+    );
+}
+
+ReactDOM.render(
+    <WelcomeDialog/>,
+    document.getElementById('root')
+);

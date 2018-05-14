@@ -8,30 +8,33 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-    class Clock extends React.Component {
-        constructor(props) {
-            super(props);
-        }
+    function FancyBorder(props) {
+        return (
+            <div className={'FancyBorder FancyBorder-' + props.color}>
+                {props.left}
+                {props.right}
+            </div>
+        );
+    }
 
-        domClick = (event) => {
-            console.log(this);
-            console.log(event);
-            event.preventDefault(); //阻止默认行为
-
-            //return "this is the result of fuction domClick";
-        }
-
-        render() {
-            return (
-                <div onClick={this.domClick}>
-                    Test react event!
-                </div>
-            );
-        }
+    function WelcomeDialog() {
+        return (
+            <FancyBorder color="blue"
+                         left={
+                             <h1 className="Dialog-title">
+                                 Welcome
+                             </h1>
+                         }
+                         right={
+                             <p className="Dialog-message">
+                                 Thank you for visiting our spacecraft!
+                             </p>
+                         }/>
+        );
     }
 
     ReactDOM.render(
-        <Clock />,
+        <WelcomeDialog/>,
         document.getElementById('root')
     );
 </script>
