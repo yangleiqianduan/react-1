@@ -2,6 +2,28 @@ https://react-guide.github.io/react-router-cn/docs/Introduction.html
 https://github.com/ReactTraining/react-router/blob/master/packages/react-router-dom/docs/guides/basic-components.md
 
 
+首先还是使用脚手架创建项目：
+
+npm install -g create-react-app
+create-react-app react-cli
+
+
+目录结构介绍：
+图中红色框实我后来加的，展示可以不考虑。
+
+
+public：里面包含了我们项目中的启动页面，react比较适合单页面项目应用开发。
+	favico.ico: 这是用来表示：快捷方式 小图标。详情可以访问：https://blog.csdn.net/it_rod/article/details/78323996#t12
+	index.html: 初始页面。
+	manifest.json: wepack打包优化相关，本人没有研究过。
+
+src：里面包含了一些我们自己使用的js文件，css文件，img文件等等，系统默认将index.html对准了index.js，index.js也就是我们的入口js，他和index.html所对应。
+
+
+
+
+
+
 路由：
 npm install react-router --save
 
