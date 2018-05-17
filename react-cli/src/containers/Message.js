@@ -7,14 +7,14 @@ class Message extends Component {
         this.state = {str: "hello"};
     }
 
-    // static getDerivedStateFromProps(nextProps, prevState) {
-    //     console.log("getDerivedStateFromProps");
-    //     return {str: "getDerivedStateFromProps update state"};
-    // }
-
-    UNSAFE_componentWillMount() {
-        console.log("UNSAFE_componentWillMount()");
+    static getDerivedStateFromProps(nextProps, prevState) {
+        console.log("getDerivedStateFromProps");
+        return {str: "getDerivedStateFromProps update state"};
     }
+
+    // UNSAFE_componentWillMount() {
+    //     console.log("UNSAFE_componentWillMount()");
+    // }
 
     componentDidMount() {
         console.log("componentDidMount");
@@ -23,6 +23,21 @@ class Message extends Component {
     shouldComponentUpdate() {
         console.log("shouldComponentUpdate");
         return true;        // 记得要返回true
+    }
+
+    getSnapshotBeforeUpdate() {
+        console.log("getSnapshotBeforeUpdate");
+
+        return true;
+    }
+
+    // componentWillUpdate() {
+    //     console.log("componentWillUpdate");
+    // }
+
+    componentDidUpdate() {
+        console.log("componentDidUpdate");
+
     }
 
     componentWillUnmount() {
@@ -47,9 +62,9 @@ class Message extends Component {
         console.log("render");
         return (
             <div>
-                <span>{"Props:"}<h2>{parseInt(this.props.num)}</h2></span>
+                <span>Props:<h2>{this.props.num}</h2></span>
                 <br/>
-                <span>{"State:"}<h2>{this.state.str}</h2></span>
+                <span>State:<h2>{this.state.str}</h2></span>
             </div>
         );
     }

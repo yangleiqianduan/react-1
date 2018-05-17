@@ -8,6 +8,4 @@ class About extends Component {
     }
 }
 
-//const About = ReactDOM.render(<AboutComponent/>, document.getElementById('root'));
-
 export default About;

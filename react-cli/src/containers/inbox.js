@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
-import Message from "./Message";
+import ReactDOM from 'react-dom'
+import Message from "./message";
 
 class Inbox extends Component {
     constructor(props) {
@@ -9,37 +10,42 @@ class Inbox extends Component {
         };
     }
 
+    shouldComponentUpdate() {
+        console.log("parent shouldComponentUpdate");
+        return true;        // 记得要返回true
+    }
+
     propsChange() {
+        console.info("更新父组件state");
         this.setState({
             num: Math.random() * 100
         });
     }
 
     setLifeCycleState() {
+        console.info("更新子组件state");
         this.refs.rLifeCycle.setTheState();
     }
 
     forceLifeCycleUpdate() {
+        console.info("强制更新子组件");
         this.refs.rLifeCycle.forceItUpdate();
     }
 
-    static unmountLifeCycle() {
-        // 这里卸载父组件也会导致卸载子组件
-        React.unmountComponentAtNode(document.getElementById("container"));
-    }
-
     parentForceUpdate() {
+        console.info("强制更新父组件");
         this.forceUpdate();
     }
 
     render() {
+        console.log("parent render")
+
         return (
             <div>
-                <a href="javascript:;" className="weui_btn weui_btn_primary" onClick={this.propsChange.bind(this)}>propsChange</a><br/>
-                <a href="javascript:;" className="weui_btn weui_btn_primary" onClick={this.setLifeCycleState.bind(this)}>setState</a><br/>
-                <a href="javascript:;" className="weui_btn weui_btn_primary" onClick={this.forceLifeCycleUpdate.bind(this)}>forceUpdate</a><br/>
-                <a href="javascript:;" className="weui_btn weui_btn_primary" onClick={Inbox.unmountLifeCycle.bind(this)}>unmount</a><br/>
-                <a href="javascript:;" className="weui_btn weui_btn_primary" onClick={this.parentForceUpdate.bind(this)}>parentForceUpdateWithoutChange</a>
+                <a href="javascript:void(0);" className="weui_btn weui_btn_primary" onClick={this.propsChange.bind(this)}>更新父组件state</a><br/>
+                <a href="javascript:void(0);" className="weui_btn weui_btn_primary" onClick={this.setLifeCycleState.bind(this)}>更新子组件state</a><br/>
+                <a href="javascript:void(0);" className="weui_btn weui_btn_primary" onClick={this.forceLifeCycleUpdate.bind(this)}>forceUpdate 子组件</a><br/>
+                <a href="javascript:void(0);" className="weui_btn weui_btn_primary" onClick={this.parentForceUpdate.bind(this)}>forceUpdate 父组件</a>
                 <Message ref="rLifeCycle" num={this.state.num}></Message>
             </div>
         );
