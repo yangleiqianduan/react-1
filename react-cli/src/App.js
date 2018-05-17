@@ -1,11 +1,10 @@
 import React, {Component} from 'react';
-import logo from './logo.svg';
 import './App.css';
+import Link from "react-router-dom/es/Link";
 import About from "./containers/about";
 import Inbox from "./containers/inbox";
-import Home from "./containers/home";
-
-import { Router, Route, Link } from 'react-router'
+import Switch from "react-router-dom/es/Switch";
+import Route from "react-router-dom/es/Route";
 
 class App extends Component {
     render() {
@@ -13,14 +12,22 @@ class App extends Component {
             <div>
                 <h1>App</h1>
                 <ul>
-                    <li><link href="#/about">About</link></li>
-                    <li><link href="#/inbox">Inbox</link></li>
-                    <li><link href="#/home">Home</link></li>
+                    <li><Link to="/About">About</Link></li>
+                    <li><Link to="/Inbox">Inbox</Link></li>
+                    <li><Link to="/Messages/2">Message</Link></li>
                 </ul>
-                {this.props.children}
+
+                <main>
+                    <Switch>
+                        <Route path="/About" component={About}/>
+                        <Route path="/Inbox" component={Inbox}/>
+                    </Switch>
+                </main>
             </div>
         )
     }
 }
+
+
 
 export default App;

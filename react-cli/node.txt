@@ -1,29 +1,107 @@
-https://react-guide.github.io/react-router-cn/docs/Introduction.html
-https://github.com/ReactTraining/react-router/blob/master/packages/react-router-dom/docs/guides/basic-components.md
+http://www.php.cn/js-tutorial-386621.html
+
+最新版本的react(16.3.2)， 以及react-router(4.2.0)
+React Router被拆分成三个包：react-router,react-router-dom
 
 
-首先还是使用脚手架创建项目：
+先了解一个简单的东西，组件在ES6和ES5的不同写法：
 
-npm install -g create-react-app
-create-react-app react-cli
+//ES6
+class Greeting extends React.Component {
+  render() {
+    return <h1>Hello, {this.props.name}</h1>;
+  }
+}
+
+ES5:
+React.createClass({
+    render() {
+        return <h1>Hello, {this.props.name}</h1>;
+    }
+})
+
+下面的例子中会使用ES6的写法取学习组件生命周期。
+
+三个状态：
+装配（第一次渲染成功）：
+
+constructor()
+
+React组件的构造函数将会在装配之前被调用。当为一个React.Component子类定义构造函数时，你应该在任何其他的表达式之前调用super(props)。否则，this.props在构造函数中将是未定义，并可能引发异常。
+
+* 看一下解析出来的源码好了。
+class Message extends Component {
+    constructor(props) {
+        super(props);
+        console.log("Message constructor");
+    }
+
+    ....
+}
+
+装换成ES5的代码为：
+var Message = function(_Component) {
+    _inherits(Message, _Component); //将Message的prototype 指向给ReactComponent.prototype。但是构造函数会重写为下面的Message方法。
+
+    function Message(props) {
+        _classCallCheck(this, Message); //判断当前的对象是不是使用Message方法new 出来的实例。
+
+        var _this = _possibleConstructorReturn(this, (Message.__proto__ || Object.getPrototypeOf(Message)).call(this, props)); //对应super(props)
+
+        console.log("Message constructor");
+        return _this;
+    }
+}
+
+执行下面这行代码之前我们看一下，当前this，如下图：
+var _this = _possibleConstructorReturn(this, (Message.__proto__ || Object.getPrototypeOf(Message)).call(this, props));
+执行完上面这行代码之后是为了形成this对象，如下图，这也是为什么要执行super(props)的目的。
 
 
-目录结构介绍：
-图中红色框实我后来加的，展示可以不考虑。
+构造函数是初始化状态的合适位置。若你不初始化状态且不绑定方法，那你也不需要为你的React组件定义一个构造函数。
+
+但是一般情况下我们会在contructor中初始化我们的state。
+
+constructor(props) {
+  super(props);
+  this.state = {
+    color: props.initialColor //提示： props不会被在当前组件被修改，除非是父组件重新渲染传入新的props。
+  };
+}
+
+contructor什么时候会调用？
+组件装配之前，我的理解就是初始化这个组件，但是在组件的生命周期，当父组件state变化导致render的前提下，一般情况下构造函数不会执行，除非当前组件的key发生了变化。如下：
+<Message ref="rLifeCycle" key={Math.random()} num={this.state.num}></Message>
+基本上每次父组件传入进来的key都不同，导致会创建新的组件。
 
 
-public：里面包含了我们项目中的启动页面，react比较适合单页面项目应用开发。
-	favico.ico: 这是用来表示：快捷方式 小图标。详情可以访问：https://blog.csdn.net/it_rod/article/details/78323996#t12
-	index.html: 初始页面。
-	manifest.json: wepack打包优化相关，本人没有研究过。
+static getDerivedStateFromProps()
 
-src：里面包含了一些我们自己使用的js文件，css文件，img文件等等，系统默认将index.html对准了index.js，index.js也就是我们的入口js，他和index.html所对应。
+前身：componentWillReceiveProps / UNSAFE_componentWillReceiveProps()
+如果定义了getDerivedStateFromProps后，又定义了componentWillReceiveProps。那么，只有前者会被调用，并且你会收到一个警告。
+
+static getDerivedStateFromProps(nextProps, prevState)
+在装配了的组件接收到新属性前调用。若你需要更新状态响应属性改变（例如，重置它），你可能需对比this.props和prevState并在该方法中返回一个对象来更新状态，或者返回null来表明新属性不需要更新任何状态。这里返回的更细状态就是以前this.setState(object)中的object。
+
+static getDerivedStateFromProps(nextProps, prevState) {
+  if(nextProps.currentRow === prevState.lastRow) {
+    return null;
+  }
+ 
+  return {
+    lastRow: nextProps.currentRow,
+    isCrollingDown: nextProps.curentRow > prevState.lastRow
+  }
+}
 
 
 
+UNSAFE_componentWillMount()
+* componentWillMount / UNSAFE_componentWillMount 可以用到React 16.4。在React 17里将被彻底移除。
 
+UNSAFE_componentWillMount()在装配发生前被立刻调用。其在render()之前被调用，因此在这方法里同步地设置状态将不会触发重渲。
+避免在该方法中引入任何的副作用或订阅。对于这些使用场景，我们推荐使用constructor()来替代。
+这是唯一的会在服务端渲染调起的生命周期钩子函数。
 
-
-路由：
-npm install react-router --save
+我在网上看到： componentWillMount--使用componentDidMount代替
 
