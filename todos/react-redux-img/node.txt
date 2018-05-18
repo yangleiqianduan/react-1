@@ -1,0 +1,22 @@
+https://blog.csdn.net/tangzhl/article/details/78177814
+https://blog.csdn.net/luke_up/article/month/2017/02
+
+
+React-redux
+通过限制更新发生的时间和方式，Redux 试图让 state 的变化变得可预测
+
+问题：
+state 目前如何存储？
+
+组件如何访问自己的state？
+
+组件如何向父组件传递state？
+
+
+
+核心概念
+
+Action:
+Action 是把数据从应用（译者注：这里之所以不叫 view 是因为这些数据有可能是服务器响应，用户输入或其它非 view 的数据 ）传到 store 的有效载荷。它是 store 数据的唯一来源。一般来说你会通过 store.dispatch() 将 action 传到 store。
+
+Reducers 指定了应用状态的变化如何响应 actions 并发送到 store 的，记住 actions 只是描述了有事情发生了这一事实，并没有描述应用如何更新 state。
