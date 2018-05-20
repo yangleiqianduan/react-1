@@ -20,3 +20,88 @@ Action:
 Action 是把数据从应用（译者注：这里之所以不叫 view 是因为这些数据有可能是服务器响应，用户输入或其它非 view 的数据 ）传到 store 的有效载荷。它是 store 数据的唯一来源。一般来说你会通过 store.dispatch() 将 action 传到 store。
 
 Reducers 指定了应用状态的变化如何响应 actions 并发送到 store 的，记住 actions 只是描述了有事情发生了这一事实，并没有描述应用如何更新 state。
+
+
+展示组件：它们只是普通的 React 组件
+
+容器组件：容器组件把这些展示组件和 Redux 关联起来。技术上讲，容器组件就是使用 store.subscribe() 从 Redux state 树中读取部分数据，并通过 props 来把这些数据提供给要渲染的组件。你可以手工来开发容器组件，但建议使用 React Redux 库的 connect() 方法来生成，这个方法做了性能优化来避免很多不必要的重复渲染。
+
+我现在得到的结果是 显示组件需要依赖于容器组件和Redux进行关联，容器组件的产生是通过connect()方法。
+
+使用 connect() 前，需要先定义 mapStateToProps 这个函数来指定如何把当前 Redux store state 映射到展示组件的 props 中。例如，VisibleTodoList 需要计算传到 TodoList 中的 todos，所以定义了根据 state.visibilityFilter 来过滤 state.todos 的方法，并在 mapStateToProps 中使用。
+
+
+
+ToDo list:
+
+
+思想：
+
+以前的state是每个组件自己的私有属性，自己控制。但是react-redux会将state提出来为一个全局共有的属性。每个组件都会去访问。
+这里我思考了一个问题？ 现在我们所说的state tree和组件自己的state真的有很大关系吗？
+
+我的理解是：在组件本身state没有其他组件交互的情况下，那么我还需要使用redux吗？我目前的想法是不用，那么react-redux的意义是什么吗？我认为是一种解决组件交互时的数据传送的问题。所以我们在考虑state tree（使用react-redux的情况下称为state tree）不要非把state（组建自身的state）给屏蔽掉，就将state tree看做是一种第三方用于组件数据通信的工具。
+
+ok，我们上面对当前的react-redux的定性有了一个大概的印象。然后现在我们需要思考如何在当前组件上去实现啊这个功能。
+
+1. 首先是当前我们使用的一切state数据都是在组件中，但是state tree是一个脱离当前项目的第三方工具。我们的大问题是如何将组件与react-redux联系起来。
+
+(1). 宏观问题：组件与state tree如何通信？
+我们想象一下使用jquery的时候如何使用的，jquer对象是一个全局的对象，当我们使用的时候就是直接使用$ / Jquery对象去使用了。同样的组件与state tree的时候也是一样：
+get data： 直接从state tree中拿出数据。
+set data： 就是执行state tree暴露出来的方法（这里是一种广义说法）去进行数据操作。
+
+上面的内容应该不难理解吧。
+
+(2). state tree暴露给组件的东西是什么呢？
+为什么会以有这种问题呢？因为js中像这种稍微复杂的操作基本上都是一种闭包的形式去构成复杂的对象，然后暴露出允许的api去进行数据操作。
+
+
+相信大家看过一些react-redux的文档，都知道核心概念是action & reducer。这二者怎么理解呢？
+我的理解是： 当前state tree是一种给与系统自己去定义操作的第三方工具。因为系统不知道你的数据是什么？不知道你的数据会有什么样的操作去进行数据操作。说到这里，你应该想到了吧，就是当前state tree想给与一个系统提供服务，但是具体当前系统的服务有什么，它是不知道的。所以他定义了两个概念。action就相当于对象中的key，reducer就是具体的value （这里的value一般是一种方法，因为是一种方法去操作state tree的数据）。因为只有我们系统定义了key：value，当前系统运行的时候我们就有了具体的操作api了。
+
+
+(3). 组件如何能够通过操作相应的action去与state tree交互？
+
+react-redux为了将概念分清楚，定义了两种组件概念：
+
+举个例子：假如我们有数据是存储在state tree中的，拿到数据之后我们需要将数据在组件中显示出来。
+
+普通组件： 和原先的组件相同。这里对应上面的例子就是拿到数据之后的操作，注意是拿到数据之后操作。
+
+容器组件： 对应那数据之前的操作都是在容器组件中操作的。就是取数据的过程。因为对于容器组件的定义是讲普通组件与react-redux联系起来，也就是前面说的两点，系统发送action与请求数据都是在这个容器组件中进行的。
+
+个人理解： 其实这样的话会将一个原先组件整体划分开来，个人目前还是不认可这种操作（可能还没有熟悉人家的操作方式），将组件划分的太开，其实不利于维护吧，当然都是个人拙见，因为目前还没那个水平去思考人家的这种实现操作。
+
+举例： 
+
+(4). 如何让我们的系统认可容器组件的存在？
+为什么会有这个问题呢？ 因为当前我们前面的说明还是在应用上，但是对于当前react系统还没有识别react-redux的操作。这也是很关键的一步。
+
+  <Provider store={store}>
+    <App />
+  </Provider>
+
+  <Provider store> 使组件层级中的 connect() 方法都能够获得 Redux store。正常情况下，你的根组件应该嵌套在 <Provider> 中才能使用 connect() 方法。
+
+ (5). 前面的action reducer如何在state tree中起到作用的，也就是我们定义的操作如何被react-redux存储在自己的闭包环境？
+ 为什么有这个问题呢？因为首先应用react-redux的系统中有对应的代码，二那，也是一种简单研读react-redux的源码。
+
+import React from 'react'
+import { render } from 'react-dom'
+import { createStore } from 'redux'
+import { Provider } from 'react-redux'
+import App from './components/App'
+import rootReducer from './reducers'
+
+const store = createStore(rootReducer)
+
+render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+)
+
+主要是上面的这行代码：
+const store = createStore(rootReducer)
