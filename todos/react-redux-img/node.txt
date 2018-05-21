@@ -13,7 +13,7 @@ state 目前如何存储？
 组件如何向父组件传递state？
 
 
-
+const store = createStore(rootReducer)
 核心概念
 
 Action:
@@ -49,7 +49,7 @@ ok，我们上面对当前的react-redux的定性有了一个大概的印象。�
 (1). 宏观问题：组件与state tree如何通信？
 我们想象一下使用jquery的时候如何使用的，jquer对象是一个全局的对象，当我们使用的时候就是直接使用$ / Jquery对象去使用了。同样的组件与state tree的时候也是一样：
 get data： 直接从state tree中拿出数据。
-set data： 就是执行state tree暴露出来的方法（这里是一种广义说法）去进行数据操作。
+set data： 就是执行state tree暴露出来的方法去进行数据操作。
 
 上面的内容应该不难理解吧。
 
@@ -84,8 +84,8 @@ react-redux为了将概念分清楚，定义了两种组件概念：
 
   <Provider store> 使组件层级中的 connect() 方法都能够获得 Redux store。正常情况下，你的根组件应该嵌套在 <Provider> 中才能使用 connect() 方法。
 
- (5). 前面的action reducer如何在state tree中起到作用的，也就是我们定义的操作如何被react-redux存储在自己的闭包环境？
- 为什么有这个问题呢？因为首先应用react-redux的系统中有对应的代码，二那，也是一种简单研读react-redux的源码。
+(5). 前面的action reducer如何在state tree中起到作用的，也就是我们定义的操作如何被react-redux存储在自己的闭包环境？
+ 为什么有这个问题呢？因为首先应用react-redux的系统中有对应的代码，二那，也是一种简单研读react-redux的源码过程。
 
 import React from 'react'
 import { render } from 'react-dom'
@@ -104,4 +104,279 @@ render(
 )
 
 主要是上面的这行代码：
+
 const store = createStore(rootReducer)
+
+a. const store = createStore(rootReducer) 
+
+b. 先看rootReducer的返回值：
+export default combineReducers({
+  todos,
+  visibilityFilter
+})
+
+c. combineReducers (combineReducers)：
+
+export default function combineReducers(reducers) {
+  var reducerKeys = Object.keys(reducers);    //获取自有属性中枚举属性的合集字符串， 这里只有我们传进的 ["todos", "visibilityFilter"]
+  var finalReducers = {};                     //过滤后的可用 reducer 
+  for (var i = 0; i < reducerKeys.length; i++) {
+    var key = reducerKeys[i];
+
+    if (process.env.NODE_ENV !== 'production') {
+      if (typeof reducers[key] === 'undefined') {
+        warning('No reducer provided for key "' + key + '"');
+      }
+    }
+
+    if (typeof reducers[key] === 'function') {
+      finalReducers[key] = reducers[key];              // (闭包作用域) finalReducers 浅复制reducers
+    }
+  }
+  var finalReducerKeys = Object.keys(finalReducers);   // (闭包作用域) finalReducerKeys 存储reducers的key集合
+
+  var unexpectedKeyCache = void 0;                     // 防止undefined被重写而出现判断不准确的情况
+  if (process.env.NODE_ENV !== 'production') {
+    unexpectedKeyCache = {};
+  }
+
+  var shapeAssertionError = void 0;
+  try {
+    assertReducerShape(finalReducers);                // 判断reducer是否规范，调到步骤d
+  } catch (e) {
+    shapeAssertionError = e;
+  }
+
+  return function combination() {                     // 返回一个function，形成闭包，给大家看一下当前闭包环境的作用域 ： 如下图：
+    var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var action = arguments[1];
+
+    if (shapeAssertionError) {
+      throw shapeAssertionError;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      var warningMessage = getUnexpectedStateShapeWarningMessage(state, finalReducers, action, unexpectedKeyCache);
+      if (warningMessage) {
+        warning(warningMessage);
+      }
+    }
+
+    var hasChanged = false;
+    var nextState = {};
+    for (var _i = 0; _i < finalReducerKeys.length; _i++) {
+      var _key = finalReducerKeys[_i];
+      var reducer = finalReducers[_key];
+      var previousStateForKey = state[_key];
+      var nextStateForKey = reducer(previousStateForKey, action);
+      if (typeof nextStateForKey === 'undefined') {
+        var errorMessage = getUndefinedStateErrorMessage(_key, action);
+        throw new Error(errorMessage);
+      }
+      nextState[_key] = nextStateForKey;
+      hasChanged = hasChanged || nextStateForKey !== previousStateForKey;
+    }
+    return hasChanged ? nextState : state;
+  };
+}
+
+
+闭包环境私有作用域图：然后调到e
+
+
+
+d。 assertReducerShape
+function assertReducerShape(reducers) {
+  Object.keys(reducers).forEach(function (key) { //遍历reducers 集合
+    var reducer = reducers[key];
+    var initialState = reducer(undefined, { type: ActionTypes.INIT }); //执行reducer[key]方法，判断是否有正确的返回值
+
+    if (typeof initialState === 'undefined') {
+      throw new Error('Reducer "' + key + '" returned undefined during initialization. ' + 'If the state passed to the reducer is undefined, you must ' + 'explicitly return the initial state. The initial state may ' + 'not be undefined. If you don\'t want to set a value for this reducer, ' + 'you can use null instead of undefined.');
+    }
+
+    var type = '@@redux/PROBE_UNKNOWN_ACTION_' + Math.random().toString(36).substring(7).split('').join('.');  //判断随机的action reducers是否返回可控的数据。
+    if (typeof reducer(undefined, { type: type }) === 'undefined') {
+      throw new Error('Reducer "' + key + '" returned undefined when probed with a random type. ' + ('Don\'t try to handle ' + ActionTypes.INIT + ' or other actions in "redux/*" ') + 'namespace. They are considered private. Instead, you must return the ' + 'current state for any unknown actions, unless it is undefined, ' + 'in which case you must return the initial state, regardless of the ' + 'action type. The initial state may not be undefined, but can be null.');
+    }
+  });
+}
+
+执行之后返回c.
+
+e. 回到a步骤执行createStore(rootReducer) 
+这里传进来的是上面d步骤返回的function。下面大部分内容都是function，可以直接转到dispatch({ type: ActionTypes.INIT }); 那一行。
+
+export default function createStore(reducer, preloadedState, enhancer) { //因为这里的后面两个参数为undefined，所以下面对于和这两个参数的内容跳过了。具体的后面参数的意义可以参照官方文档
+  var _ref2;
+
+  if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
+    enhancer = preloadedState;
+    preloadedState = undefined;
+  }
+
+  if (typeof enhancer !== 'undefined') {
+    if (typeof enhancer !== 'function') {
+      throw new Error('Expected the enhancer to be a function.');
+    }
+
+    return enhancer(createStore)(reducer, preloadedState);
+  }
+
+  if (typeof reducer !== 'function') {
+    throw new Error('Expected the reducer to be a function.');
+  }
+
+  var currentReducer = reducer;
+  var currentState = preloadedState;
+  var currentListeners = [];
+  var nextListeners = currentListeners;
+  var isDispatching = false;
+
+  function ensureCanMutateNextListeners() {
+    if (nextListeners === currentListeners) {
+      nextListeners = currentListeners.slice();
+    }
+  }
+
+  function getState() {
+    return currentState;
+  }
+
+  function subscribe(listener) {
+    if (typeof listener !== 'function') {
+      throw new Error('Expected listener to be a function.');
+    }
+
+    var isSubscribed = true;
+
+    ensureCanMutateNextListeners();
+    nextListeners.push(listener);
+
+    return function unsubscribe() {
+      if (!isSubscribed) {
+        return;
+      }
+
+      isSubscribed = false;
+
+      ensureCanMutateNextListeners();
+      var index = nextListeners.indexOf(listener);
+      nextListeners.splice(index, 1);
+    };
+  }
+
+  
+  function dispatch(action) {
+    if (!isPlainObject(action)) {
+      throw new Error('Actions must be plain objects. ' + 'Use custom middleware for async actions.');
+    }
+
+    if (typeof action.type === 'undefined') {
+      throw new Error('Actions may not have an undefined "type" property. ' + 'Have you misspelled a constant?');
+    }
+
+    if (isDispatching) {
+      throw new Error('Reducers may not dispatch actions.');
+    }
+
+    try {
+      isDispatching = true;
+      currentState = currentReducer(currentState, action);   //初始化state，执行我们传进来的步骤d返回的reducer function. 请调到f.
+    } finally {
+      isDispatching = false;
+    }
+
+    var listeners = currentListeners = nextListeners;
+    for (var i = 0; i < listeners.length; i++) {
+      var listener = listeners[i];
+      listener();
+    }
+
+    return action;
+  }
+
+  function replaceReducer(nextReducer) {
+    if (typeof nextReducer !== 'function') {
+      throw new Error('Expected the nextReducer to be a function.');
+    }
+
+    currentReducer = nextReducer;
+    dispatch({ type: ActionTypes.INIT });
+  }
+
+  function observable() {
+    var _ref;
+
+    var outerSubscribe = subscribe;
+    return _ref = {
+      subscribe: function subscribe(observer) {
+        if (typeof observer !== 'object') {
+          throw new TypeError('Expected the observer to be an object.');
+        }
+
+        function observeState() {
+          if (observer.next) {
+            observer.next(getState());
+          }
+        }
+
+        observeState();
+        var unsubscribe = outerSubscribe(observeState);
+        return { unsubscribe: unsubscribe };
+      }
+    }, _ref[$$observable] = function () {
+      return this;
+    }, _ref;
+  }
+
+  dispatch({ type: ActionTypes.INIT });  //执行初始化state操作
+
+  return _ref2 = {  //返回一个对象，此时我们再看一下当前的作用域的值如下图：
+    dispatch: dispatch,
+    subscribe: subscribe,
+    getState: getState,
+    replaceReducer: replaceReducer
+  }, _ref2[$$observable] = observable, _ref2;
+}
+
+
+如下图： 红色框中的图是返回对象的闭包作用域，绿色框是暴露出来的API。然后初始化就走完了。
+
+
+f. return function combination()： 
+return function combination() {
+    var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};   //初始化state为[].
+    var action = arguments[1];  // {type：“@@redux/INIT”}
+
+    if (shapeAssertionError) {
+      throw shapeAssertionError;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      var warningMessage = getUnexpectedStateShapeWarningMessage(state, finalReducers, action, unexpectedKeyCache);
+      if (warningMessage) {
+        warning(warningMessage);
+      }
+    }
+
+    var hasChanged = false;
+    var nextState = {};
+    for (var _i = 0; _i < finalReducerKeys.length; _i++) {  //遍历所有可用 reducer对象，然后执行reducer获取初始化状态，finalReducerKeys 为可用 reducer 的 key 值数组  
+      var _key = finalReducerKeys[_i];
+      var reducer = finalReducers[_key];       		//通过 key 值找到对应的 reducer     
+      var previousStateForKey = state[_key];   		//获取当前reducer的 state，作为下行代码执行reducer函数的 initialState           
+      var nextStateForKey = reducer(previousStateForKey, action); //获取初始化状态  
+      if (typeof nextStateForKey === 'undefined') {
+        var errorMessage = getUndefinedStateErrorMessage(_key, action);
+        throw new Error(errorMessage);
+      }
+      nextState[_key] = nextStateForKey;
+      hasChanged = hasChanged || nextStateForKey !== previousStateForKey; // 判断状态是否改变，返回对象的状态  
+    }
+    return hasChanged ? nextState : state;
+  };
+
+(6) 项目中发送action的过程：
+
+dispatch(addTodo(input.value))
